@@ -11,46 +11,41 @@
                                       |o=======.|      /   /    \  /
                                       `"""""""""`  ,--`,--'\/\    /
                                                   '-- "--'  '--'
-                                          Exploit By: Tyler Butler 
+                                     Vulnerability Research by Tyler Butler 🍌 
 ```
 
 
-# Monkey-see-Monkey-do
-This repository contains Tyler Butler's vulnerability research on MonkeyType, a popular typing test website with a growing online community. The research includes 3 cross-site scripting vulnerabilities and two PoC utility exploits, `monkey-see.py` and `monkey-do.py`. Monkey-see is a python program for spoofing leaderboard scores, and monkey-do is a python program for creating XSS payloaded usernames.
+# Monkey See Monkey Do 🙈
+This repository contains original vulnerability research on [MonkeyType](https://monkeytype.com/), a popular typing-test web application with a growing online community. The current research includes several cross-site scripting vulnerabilities. All issues were disclosed to the vendor according to the vendor's [guidance](https://github.com/Miodec/monkeytype/blob/master/.github/ISSUE_TEMPLATE/bug_report.md) as GitHub issues, as well as on the discord channel.  
 
 
-- [Monkey-see-Monkey-do](#monkey-see-monkey-do)
+**Table of Contents**
 - [Identified Vulnerabilities](#identified-vulnerabilities)
   - [Stored Cross-Site Scripting (XSS) via Tribe Chat](#stored-cross-site-scripting-xss-via-tribe-chat)
-    - [Overview](#overview)
-    - [Payload](#payload)
-    - [To Reproduce](#to-reproduce)
-    - [Vulnerable Components](#vulnerable-components)
-  - [UNCONFIRMED Stored Cross-Site Scriting (XSS) via Leaderboard](#unconfirmed-stored-cross-site-scriting-xss-via-leaderboard)
-    - [Vulnerable Components](#vulnerable-components-1)
-  - [Self Cross Site Scripting (XSS) via Word History #1348](#self-cross-site-scripting-xss-via-word-history-1348)
-    - [Overview](#overview-1)
-    - [Reproduce](#reproduce)
+  - [Self Cross Site Scripting (XSS) via Word History](#self-cross-site-scripting-xss-via-word-history)
 - [MonkeySee](#monkeysee)
   - [What is it?](#what-is-it)
   - [How does it Work?](#how-does-it-work)
-    - [Appendix, to remove](#appendix-to-remove)
 
 
 # Identified Vulnerabilities
+
+> The following section describes publically disclosed vulnerabilities
 ## Stored Cross-Site Scripting (XSS) via Tribe Chat 
 
 ![](img/tribe_stored_xss.gif)
 
 ### Overview
 
-The MonkeyType Tribe chat at https://dev.monkeytype.com/tribe is vulnerable to stored cross-site scripting through user comments. To inject XSS payloads, malicious users can enter a non-xss string in the chat field and send it to web server, then capture the web socket traffic and modify the input to a XSS payload.
+The MonkeyType Tribe chat at https://dev.monkeytype.com/tribe is vulnerable to stored cross-site scripting through user comments and username. The research concludes that input validation can be evaded by intercepting raw web socket traffic, and injecting payloads directly into message content. To do so, malicious users can enter a non-xss string in the chat field and send it to web server, then capture the web socket traffic with a proxy tool like BurpSuite, and finally modify the input to a XSS payload.
 
 ### Payload   
 
-In this example, I used an `onclick` payload to demonstrate the capability.
+In this example, I used an `onclick` payload to demonstrate the capability. The final payload was ```test<svg/onclick=alert`xss`>```
 
-```
+**Socket Message**
+
+```json
 42["mp_chat_message",{"isSystem":false,"isLeader":true,"message":"test<svg/onclick=alert`xss`>","from":{"id":"i6ZO4keqlEgwQHY-AAAm","name":"pwnville"}}]
 ```
 
@@ -73,49 +68,18 @@ In this example, I used an `onclick` payload to demonstrate the capability.
 
 ![](img/tribe_stored_xss_burp.png)
 
-### Vulnerable Components
 
+## Self Cross Site Scripting (XSS) via Word History
 
-## UNCONFIRMED Stored Cross-Site Scriting (XSS) via Leaderboard 
-
-### Vulnerable Components 
-
-The root cause of the stored XSS vulnerability is the method for which firebase data is input into the leaderboards table. On line [126](https://github.com/Miodec/monkeytype/blob/974088926fbe42de1c7c82a1a8902a103c18b91f/src/js/elements/leaderboards.js#L126) in leaderboard.js, 
-
-
-```html
-$("#leaderboardsWrapper table.daily tbody").append(`
-          <tr>
-          <td>${
-            dindex === 0 ? '<i class="fas fa-fw fa-crown"></i>' : dindex + 1
-          }</td>
-          <td ${meClassString}>${entry.name}</td>
-          <td class="alignRight">${entry.wpm.toFixed(
-            2
-          )}<br><div class="sub">${entry.acc.toFixed(2)}%</div></td>
-          <td class="alignRight">${entry.raw.toFixed(2)}<br><div class="sub">${
-            entry.consistency === "-" ? "-" : entry.consistency.toFixed(2) + "%"
-          }</div></td>
-          <td class="alignRight">${entry.mode}<br><div class="sub">${
-            entry.mode2
-          }</div></td>
-          <td class="alignRight">${moment(entry.timestamp).format(
-            "DD MMM YYYY"
-          )}<br><div class='sub'>${moment(entry.timestamp).format(
-            "HH:mm"
-          )}</div></td>
-        </tr>
-```
-
-## Self Cross Site Scripting (XSS) via Word History #1348
+![](img/self_xss2.png)
 
 ### Overview   
 
 User input is interpreted by the browser unsanitized when entered into the typing challenge. Once the challenge is over and the user opens the "word history" tab, hovering over the mispelled words will cause the browser to interpret the payload as valid injected code. Under current limitations significant code execution cannot be caused due to character limit, however more research should be done to prove impact. This occurs in default settings.
 
-### Reproduce 
+### To Reproduce 
 
-For a XSS payload, just start typing this "><svg/onclick=alert1`>
+For a XSS payload, just start typing the following upon immediatly starting a new typing test ```"><svg/onclick=alert1`>```
 
 +  Start a new typing challenge
 +  Spell the first word correctly, then immediately after the first word and with no spaces after, terminate the string with ">
@@ -123,10 +87,11 @@ For a XSS payload, just start typing this "><svg/onclick=alert1`>
 +  Once the timer is complete, select the option to view word history
 +  Hover over the misspelled word, and the payload will execute
 
+![](img/self_xss1.png)
+
+
 
 # MonkeySee 
-*Leaderboard Spoofing Exploit*
-
 ## What is it? 
 Monkey See is a quick proof of concept to show how any user can enter the daily and global leaderboards of [MonkeyType](https://monkeytype.com) by sending carefully crafted post requests to the firebase server. 
 
@@ -155,36 +120,3 @@ Monkey see works by creating a new post request and changes the `wpm`, `rawwpm`,
 ```
 
 ![](img/mode_60_injection.png)
-
-"wpm":195.17,"rawWpm":195.17,"correctChars":242,"incorrectChars":1,"allChars":243,
-"wpm":*,"rawWpm":*,"correctChars":*,"incorrectChars":*,"allChars":*,
-
-
-
-![](img/burp.png)
-
-
- 
-
-
-### Appendix, to remove
-
-
-User account
-+ username: pwn2win
-+ password: echoTRAIN2win
-+ email: foo@sharklasers.com
-
-
-
-monkeysee
-monkeysee@sharklasers.com
-echoTRAIN2win
-
-
-
-
-dev-monketype.com
-
-foo
-echoTRAIN2win
