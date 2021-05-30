@@ -1,22 +1,22 @@
 ```
-                                                          .="=.
-                                                      _/.-.-.\_     _
-                                                      ( ( o o ) )    ))
-                                                      |/  "  \|    //
-                                      .-------.        \'---'/    //
-                                      _|~~ ~~  |_       /`"""`\\  ((
-                                  =(_|_______|_)=    / /_,_\ \\  \\
-                                      |:::::::::|      \_\\_'__/ \  ))
-                                      |:::::::[]|       /`  /`~\  |//
-                                      |o=======.|      /   /    \  /
-                                      `"""""""""`  ,--`,--'\/\    /
-                                                  '-- "--'  '--'
-                                     Vulnerability Research by Tyler Butler 🍌 
+                                        .="=.
+                                    _/.-.-.\_     _
+                                    ( ( o o ) )    ))
+                                    |/  "  \|    //
+                    .-------.        \'---'/    //
+                    _|~~ ~~  |_       /`"""`\\  ((
+                =(_|_______|_)=    / /_,_\ \\  \\
+                    |:::::::::|      \_\\_'__/ \  ))
+                    |:::::::[]|       /`  /`~\  |//
+                    |o=======.|      /   /    \  /
+                    `"""""""""`  ,--`,--'\/\    /
+                                '-- "--'  '--'
+                  Vulnerability Research by Tyler Butler 🐒 
 ```
 
 
-# Monkey See Monkey Do 🙈
-This repository contains original vulnerability research on [MonkeyType](https://monkeytype.com/), a popular typing-test web application with a growing online community. The current research includes several cross-site scripting vulnerabilities. All issues were disclosed to the vendor according to the vendor's [guidance](https://github.com/Miodec/monkeytype/blob/master/.github/ISSUE_TEMPLATE/bug_report.md) as GitHub issues, as well as on the discord channel.  
+# Banana Cannon 🍌
+This repository contains vulnerability research on [monkeytype.com](https://monkeytype.com/), a popular typing-test application with a growing online community. Current research includes two cross-site scripting vulenrabilities and an authenticated bypass PoC exploit.
 
 
 **Table of Contents**
@@ -24,10 +24,8 @@ This repository contains original vulnerability research on [MonkeyType](https:/
   - [Stored Cross-Site Scripting (XSS) via Tribe Chat](#stored-cross-site-scripting-xss-via-tribe-chat)
   - [Leaderboard Authenticated ByPass by Spoofing](#leaderboard-authenticated-bypass-by-spoofing)
   - [Self Cross Site Scripting (XSS) via Word History](#self-cross-site-scripting-xss-via-word-history)
-- [MonkeySee](#monkeysee)
-  - [What is it?](#what-is-it)
-  - [How does it Work?](#how-does-it-work)
-
+- [Proof of Concept Exploits](#proof-of-concept-exploits)
+  - [BananaCannon.py](#BananaCannon)
 
 # Identified Vulnerabilities
 
@@ -38,7 +36,7 @@ This repository contains original vulnerability research on [MonkeyType](https:/
 
 ### Overview
 
-The MonkeyType Tribe chat at https://dev.monkeytype.com/tribe is vulnerable to stored cross-site scripting through user comments and username. The research concludes that input validation can be evaded by intercepting raw web socket traffic, and injecting payloads directly into message content. To do so, malicious users can enter a non-xss string in the chat field and send it to web server, then capture the web socket traffic with a proxy tool like BurpSuite, and finally modify the input to a XSS payload.
+The MonkeyType Tribe chat at https://dev.monkeytype.com/tribe is vulnerable to stored cross-site scripting through user comments and username. The research concludes that client-side input validation can be evaded by intercepting raw web socket traffic, and injecting payloads directly into message content. To do so, malicious users can enter a non-xss string in the chat field and send it to web server, then capture the web socket traffic with a proxy tool like BurpSuite, and finally modify the input to a XSS payload.
 
 ### Payload   
 
@@ -68,6 +66,12 @@ In this example, I used an `onclick` payload to demonstrate the capability. The 
 
 
 ![](img/tribe_stored_xss_burp.png)
+
+
+### Disclosure Timeline 
+
++ **May 27th, 2021**: Vulnearbility Discovered and Disclosed on Github per guidance as issue [#1476](https://github.com/Miodec/monkeytype/issues/1476)
++ **May 27th, 2021**: Patch issued
 
 
 ## Leaderboard Authenticated ByPass by Spoofing 
@@ -154,12 +158,12 @@ For a XSS payload, just start typing the following upon immediatly starting a ne
 ![](img/self_xss1.png)
 
 
+# Proof of Concept Exploits  
+## BananaCannon
+### What is it? 
+BananaCannon is a quick proof of concept to show how any user can enter the daily and global leaderboards of [MonkeyType](https://monkeytype.com) by sending carefully crafted post requests to the firebase server. 
 
-# MonkeySee 
-## What is it? 
-Monkey See is a quick proof of concept to show how any user can enter the daily and global leaderboards of [MonkeyType](https://monkeytype.com) by sending carefully crafted post requests to the firebase server. 
-
-## How does it Work?  
+### How does it Work?  
 
 Monkey see works by creating a new post request and changes the `wpm`, `rawwpm`, `correctChars`, `incorrectChars`, and `allChars` parameters. Back-end logic checks to make sure that the wpm matches the total number of correctChars, so it's important to keep these consistent. For example, to create a new score with 195 words per minuet, the following parameters were used.
 
