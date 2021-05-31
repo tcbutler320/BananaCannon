@@ -1,27 +1,30 @@
+
 ```
-                                        .="=.
-                                    _/.-.-.\_     _
-                                    ( ( o o ) )    ))
-                                    |/  "  \|    //
-                    .-------.        \'---'/    //
-                    _|~~ ~~  |_       /`"""`\\  ((
-                =(_|_______|_)=    / /_,_\ \\  \\
-                    |:::::::::|      \_\\_'__/ \  ))
-                    |:::::::[]|       /`  /`~\  |//
-                    |o=======.|      /   /    \  /
-                    `"""""""""`  ,--`,--'\/\    /
-                                '-- "--'  '--'
-                  Vulnerability Research by Tyler Butler 🐒 
+                      .="=.
+                    _/.-.-.\_     _      
+                    ( ( o o ) )    ))
+                    |/  "  \|    //
+    .-------.        \'---'/    //
+    _|~~ ~~  |_       /`"""`\\  ((
+=(_|_______|_)=    / /_,_\ \\  \\
+    |:::::::::|      \_\\_'__/ \  ))
+    |:::::::[]|       /`  /`~\  |//
+    |o=======.|      /   /    \  /
+    `"""""""""`  ,--`,--'\/\    /
+                '-- "--'  '--'
+  Vulnerability Research by Tyler Butler 🐒 
 ```
+
 
 
 # Banana Cannon 🍌
-This repository contains vulnerability research on [monkeytype.com](https://monkeytype.com/), a popular typing-test application with a growing online community. Current research includes two cross-site scripting vulenrabilities and an authenticated bypass PoC exploit.
+This repository contains vulnerability research on [monkeytype.com](https://monkeytype.com/), a popular typing-test application with a growing online community. Current research includes two cross-site scripting vulenrabilities and a PoC exploit that allows users to automatically top the leaderboard. 
+
 
 
 **Table of Contents**
 - [Identified Vulnerabilities](#identified-vulnerabilities)
-  - [Stored Cross-Site Scripting (XSS) via Tribe Chat](#stored-cross-site-scripting-xss-via-tribe-chat)
+  - [Stored Cross-Site Scripting (XSS) via Tribe Chat](#stored-cross-site-scripting-xss-via-tribe-chat-1476)
   - [Leaderboard Authenticated ByPass by Spoofing](#leaderboard-authenticated-bypass-by-spoofing)
   - [Self Cross Site Scripting (XSS) via Word History](#self-cross-site-scripting-xss-via-word-history)
 - [Proof of Concept Exploits](#proof-of-concept-exploits)
@@ -30,7 +33,7 @@ This repository contains vulnerability research on [monkeytype.com](https://monk
 # Identified Vulnerabilities
 
 > The following section describes publically disclosed vulnerabilities
-## Stored Cross-Site Scripting (XSS) via Tribe Chat 
+## Stored Cross-Site Scripting (XSS) via Tribe Chat #1476
 
 ![](img/tribe_stored_xss.gif)
 
@@ -109,34 +112,6 @@ Connection: close
 
 ![](img/leader.png)
 
-### Vulnerable Components 
-
-The root cause of the stored XSS vulnerability is the method for which firebase data is input into the leaderboards table. On line [126](https://github.com/Miodec/monkeytype/blob/974088926fbe42de1c7c82a1a8902a103c18b91f/src/js/elements/leaderboards.js#L126) in leaderboard.js, 
-
-
-```html
-$("#leaderboardsWrapper table.daily tbody").append(`
-          <tr>
-          <td>${
-            dindex === 0 ? '<i class="fas fa-fw fa-crown"></i>' : dindex + 1
-          }</td>
-          <td ${meClassString}>${entry.name}</td>
-          <td class="alignRight">${entry.wpm.toFixed(
-            2
-          )}<br><div class="sub">${entry.acc.toFixed(2)}%</div></td>
-          <td class="alignRight">${entry.raw.toFixed(2)}<br><div class="sub">${
-            entry.consistency === "-" ? "-" : entry.consistency.toFixed(2) + "%"
-          }</div></td>
-          <td class="alignRight">${entry.mode}<br><div class="sub">${
-            entry.mode2
-          }</div></td>
-          <td class="alignRight">${moment(entry.timestamp).format(
-            "DD MMM YYYY"
-          )}<br><div class='sub'>${moment(entry.timestamp).format(
-            "HH:mm"
-          )}</div></td>
-        </tr>
-```
 ## Self Cross Site Scripting (XSS) via Word History
 
 ![](img/self_xss2.png)
@@ -161,30 +136,9 @@ For a XSS payload, just start typing the following upon immediatly starting a ne
 # Proof of Concept Exploits  
 ## BananaCannon
 ### What is it? 
-BananaCannon is a quick proof of concept to show how any user can enter the daily and global leaderboards of [MonkeyType](https://monkeytype.com) by sending carefully crafted post requests to the firebase server. 
+BananaCannon is a quick proof of concept to show how any user can enter the daily and global leaderboards of [MonkeyType](https://monkeytype.com) by sending carefully crafted post requests to the firebase server located at `https://us-central1-monkey-type.cloudfunctions.net:443/checkLeaderboards`.
 
 ### How does it Work?  
 
-Monkey see works by creating a new post request and changes the `wpm`, `rawwpm`, `correctChars`, `incorrectChars`, and `allChars` parameters. Back-end logic checks to make sure that the wpm matches the total number of correctChars, so it's important to keep these consistent. For example, to create a new score with 195 words per minuet, the following parameters were used.
+BananaCannon works by sending a new post request to `https://us-central1-monkey-type.cloudfunctions.net:443/checkLeaderboards`, passing along a username, uid, and result details. Back-end logic on firebase checks the `wpm`, `rawwpm`, `correctChars`, `incorrectChars`, and `allChars` parameters to ensure an acceptible score is being set. 
 
-**Mode 15**
-
-```json
-"wpm":195.17,
-"rawWpm":195.17,
-"correctChars":242,
-"incorrectChars":1,
-"allChars":243,
-```
-
-**Mode 60**
-
-```json
-"wpm":190.79,
-"rawWpm":191.79,
-"correctChars":950,
-"incorrectChars":0,
-"allChars":950,
-```
-
-![](img/mode_60_injection.png)
