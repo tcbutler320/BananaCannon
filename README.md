@@ -18,14 +18,15 @@
 
 
 # Banana Cannon 🍌
-This repository contains vulnerability research on [monkeytype.com](https://monkeytype.com/), a popular typing-test application with a growing online community. Current research includes two cross-site scripting vulenrabilities and a PoC exploit that allows users to automatically top the leaderboard. 
+This repository contains vulnerability research on [monkeytype.com](https://monkeytype.com/), a popular typing-test application with a growing online community. Current research includes two cross-site scripting vulenrabilities, a proof of concept exploit that allows users to automatically top the leaderboard, and a proof of concept for impersonating other user's in Tribe chat via socket modification.
 
 
 
 **Table of Contents**
 - [Identified Vulnerabilities](#identified-vulnerabilities)
   - [Stored Cross-Site Scripting (XSS) via Tribe Chat](#stored-cross-site-scripting-xss-via-tribe-chat-1476)
-  - [Leaderboard Authenticated ByPass by Spoofing](#leaderboard-authenticated-bypass-by-spoofing)
+  - [Arbitrary Leaderboard Position via Improper Authorization ](#arbitrary-leaderboard-position-via-improper-authorization)
+  - [Tribe Chat User Spoofing via Improper Authorization](#tribe-chat-user-impersonation--cwe-285-improper-authorization)
   - [Self Cross Site Scripting (XSS) via Word History](#self-cross-site-scripting-xss-via-word-history)
 - [Proof of Concept Exploits](#proof-of-concept-exploits)
   - [BananaCannon.py](#BananaCannon)
@@ -77,7 +78,7 @@ In this example, I used an `onclick` payload to demonstrate the capability. The 
 + **May 27th, 2021**: Patch issued
 
 
-## Leaderboard Authenticated ByPass by Spoofing 
+## Arbitrary Leaderboard Position via Improper Authorization
 
 ### Overview 
 
@@ -110,7 +111,29 @@ Connection: close
 > After making the above post request, my user was added to the top of the leaderboard  
 
 
-![](img/leader.png)
+![](img/leader.png)  
+
+## Tribe Chat User Impersonation | CWE-285: Improper Authorization
+
+![](img/tribe_chat_impersonation.gif)
+
+**Detail**: User messages in the [Tribe Chat](https://dev.monkeytype.com/tribe) can be impersonated due improper authorization. Malicious users can abuse current socket message authentication measures to create messages that appear to come from other users or system. 
+
+
+**To Reproduce** <!-- Steps to reproduce the behavior: -->
+
+> See video proof of concept above
+
+1. Go to a tribe chat room, ex: https://dev.monkeytype.com/tribe_1d849e
+2. Send a message, capturing the socket.io message. 
+`42["mp_chat_message",{"isSystem":false,"isLeader":true,"message":"Hey this is still alice","from":{"id":"UocD_4qRZiXGbXf8AA-n","name":"alice"}}]`
+3. Modify the name parameter, and re-send
+`42["mp_chat_message",{"isSystem":false,"isLeader":true,"message":"Hey this is still alice","from":{"id":"UocD_4qRZiXGbXf8AA-n","name":"bob"}}]`  
+
+**Expected behavior**: The socket.io implementation should use an authentication/token system to ensure that the user sending the message is authorized to be using their unique name. The socket.io [middleware](https://socket.io/docs/v3/middlewares/) function might be useful in achieving this. 
+
+
+
 
 ## Self Cross Site Scripting (XSS) via Word History
 
