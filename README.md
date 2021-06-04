@@ -15,7 +15,7 @@
   Vulnerability Research by Tyler Butler 🐒 
 ```
 
-
+> {!} All vulnerabilities have been disclosed and since fixed by the developers in issues #1476 #1498 #1503 #1348 
 
 # Banana Cannon 🍌
 This repository contains vulnerability research on [monkeytype.com](https://monkeytype.com/), a popular typing-test application with a growing online community. Current research includes two cross-site scripting vulenrabilities, a proof of concept exploit that allows users to automatically top the leaderboard, and a proof of concept for impersonating other user's in Tribe chat via socket modification.
